@@ -162,6 +162,17 @@ export default function Chat() {
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); },
     [localMessages, streamingContent, currentToolParts]);
 
+  // Close workspace picker on outside click
+  useEffect(() => {
+    if (!workspaceEditing) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".relative")) setWorkspaceEditing(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [workspaceEditing]);
+
   const handleSwitchSession = useCallback((id: string) => {
     setShowSessionSwitcher(false); setSessionSearch(""); navigate("/chat/"+id);
   }, [navigate]);
@@ -487,11 +498,19 @@ export default function Chat() {
         <div className="flex items-center gap-2 mb-1.5">
           <span className="flex items-center gap-1 text-[10px] text-gray-600">
             <span>{t("chat.workspace")}:</span>
-            <span className="flex items-center gap-1 bg-dark-900 border border-dark-700 rounded px-1.5 py-0.5 text-gray-500 max-w-[200px]"
+            <div className="relative">
+              <button onClick={() => setWorkspaceEditing(!workspaceEditing)}
+                className="flex items-center gap-1 bg-dark-900 border border-dark-700 rounded px-1.5 py-0.5 text-gray-500 max-w-[200px] hover:border-dark-500 hover:text-gray-300 transition-colors"
                 title={workspace || ""}>
                 <FolderOpen size={11} className="flex-shrink-0 text-whale-400/50" />
                 <span className="text-[10px] truncate">{workspace ? workspace.split(/[\\\\/]/).pop() : t("chat.workspacePlaceholder")}</span>
-              </span>
+              </button>
+              {workspaceEditing && (
+                <div className="absolute top-full left-0 mt-1 z-50 w-72 bg-dark-950 border border-dark-700 rounded-lg shadow-2xl p-2">
+                  <WorkspacePicker value={workspace} onChange={(p) => { setWorkspace(p); setNewSessionWorkspace(p); setWorkspaceEditing(false); }} />
+                </div>
+              )}
+            </div>
           </span>
           <span className={"flex items-center gap-0.5 text-[10px] "+(wsConnected?"text-green-400":"text-red-400")}>
             {wsConnected?<Wifi size={10}/>:<WifiOff size={10}/>}{wsConnected?t("chat.online"):t("chat.offline")}

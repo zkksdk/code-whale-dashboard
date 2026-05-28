@@ -86,23 +86,20 @@ export default function WorkspacePage() {
         </div>
       </div>
 
-      {/* Workspace Switcher */}
+      {/* Workspace Display */}
       <div className="bg-dark-900/50 border border-dark-800 rounded-lg p-4">
         <div className="flex items-center gap-2 mb-3">
           <FolderOpen size={14} className="text-whale-400" />
-          <h3 className="text-sm font-medium text-gray-200">{t("workspace.switchWorkspace") || "Switch Workspace"}</h3>
+          <h3 className="text-sm font-medium text-gray-200">{t("workspace.current") || "Current Workspace"}</h3>
         </div>
-        {!switchingWorkspace ? (
-          <div className="flex items-center gap-2">
-            <div className="flex-1">
-              <button onClick={() => { setSelectedWorkspace(d.workspace || ""); setSwitchingWorkspace(true); }}
-                className="w-full flex items-center gap-2 px-3 py-2 bg-dark-900 border border-dark-700 rounded-lg text-sm text-gray-400 hover:text-gray-200 hover:border-dark-600 transition-colors text-left">
-                <FolderOpen size={14} className="text-whale-400/50 flex-shrink-0" />
-                <span className="truncate flex-1 font-mono">{d.workspace || "-"}</span>
-                <span className="text-[10px] text-gray-600">Click to change</span>
-              </button>
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 px-3 py-2 bg-dark-900 border border-dark-700 rounded-lg text-sm text-gray-300">
+              <FolderOpen size={14} className="text-whale-400/50 flex-shrink-0" />
+              <span className="truncate flex-1 font-mono">{d.workspace || "-"}</span>
             </div>
           </div>
+        </div>
         ) : (
           <div className="space-y-3">
             <WorkspacePicker value={selectedWorkspace} onChange={setSelectedWorkspace} />
@@ -117,7 +114,6 @@ export default function WorkspacePage() {
               </button>
             </div>
           </div>
-        )}
       </div>
 
       {/* Quick Stats Row */}
