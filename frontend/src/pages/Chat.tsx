@@ -15,6 +15,7 @@ import { formatRelativeTime } from "../utils/format";
 import SlashCommands, { SlashCommand, SLASH_COMMANDS } from "../components/Chat/SlashCommands";
 import FileMentions from "../components/Chat/FileMentions";
 import ApprovalDialog from "../components/Chat/ApprovalDialog";
+import WorkspacePicker from "../components/Chat/WorkspacePicker";
 
 interface ChatPart {
   type: "text" | "thinking" | "tool_call";
@@ -537,9 +538,7 @@ export default function Chat() {
               </div>
               <div>
                 <label className="block text-[11px] text-gray-500 mb-1">{t("chat.workspace") || "Workspace"}</label>
-                <input value={newSessionWorkspace} onChange={e=>setNewSessionWorkspace(e.target.value)}
-                  className="w-full bg-dark-900 border border-dark-700 rounded px-2.5 py-1.5 text-sm text-gray-200 placeholder-gray-600 outline-none focus:border-whale-500/50 font-mono"
-                  placeholder={workspace || "C:\\path\\to\\project"} />
+                <WorkspacePicker value={newSessionWorkspace} onChange={setNewSessionWorkspace} />
               </div>
             </div>
             <div className="flex gap-2 mt-4">

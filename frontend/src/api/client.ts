@@ -53,6 +53,9 @@ export function getCuratedSkills() { return api.get("/skills/curated"); }
 
 // Workspace
 export function getWorkspaceStatus() { return api.get("/workspace"); }
+export function getAvailableWorkspaces() { return api.get("/workspace/workspaces"); }
+export function createWorkspaceDir(parentPath: string, name: string) { return api.post("/workspace/create", { parentPath, name }); }
+export function browseDirectory(dirPath?: string) { return api.get("/workspace/browse", { params: { path: dirPath || "" } }); }
 
 // Usage
 export function getUsage(params?: { since?: string; until?: string; group_by?: string }) { return api.get("/usage", { params }); }
