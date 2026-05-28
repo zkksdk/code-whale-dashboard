@@ -78,7 +78,7 @@ export default function WorkspacePage() {
         <StatPill label={t("skills.title")} value={skills.length} color="text-purple-400" />
         <StatPill label={t("workspace.features")} value={features.filter((f: any) => f.enabled).length} color="text-green-400" sub={`/ ${features.length}`} />
         <StatPill label={t("workspace.gitStatus")} value={isGit ? ws.branch || "?" : t("workspace.noGit")} color={isGit ? "text-green-400" : "text-amber-400"} />
-        <StatPill label={t("analytics.sessions")} value={d.storage?.spillover?.count || 0} color="text-blue-400" sub={t("workspace.spillover")} />
+        <StatPill label={t("workspace.spillover")} value={d.storage?.spillover?.count || 0} color="text-blue-400" />
         <StatPill label={t("config.model")} value={d.default_text_model?.split("-").pop() || "?"} color="text-gray-300" />
       </div>
 
@@ -109,7 +109,7 @@ export default function WorkspacePage() {
             <InfoRow label={t("config.model")} value={d.capability?.resolved_model || ""} />
             <InfoRow label={t("models.contextWindow")} value={d.capability?.context_window?.toLocaleString() || ""} />
             <InfoRow label={t("models.maxTokens")} value={d.capability?.max_output?.toLocaleString() || ""} />
-            <InfoRow label="Payload Mode" value={d.capability?.request_payload_mode || ""} />
+            <InfoRow label={t("workspace.payloadMode") || "Payload Mode"} value={d.capability?.request_payload_mode || ""} />
           </div>
           {/* Model list */}
           {models.length > 0 && (
