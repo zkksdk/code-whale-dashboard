@@ -1,112 +1,156 @@
-﻿# CodeWhale Dashboard v2
+﻿# CodeWhale Dashboard
 
-A modern web-based dashboard for [CodeWhale](https://github.com/Hmbown/CodeWhale), the DeepSeek-first agentic coding terminal. Provides a graphical interface for managing sessions, MCP servers, tasks, and analytics — powered by the CodeWhale HTTP/SSE Runtime API.
+<p align="center">
+  <img src="https://img.shields.io/github/stars/zkksdk/code-whale-dashboard?style=social" alt="Stars">
+  <img src="https://img.shields.io/github/license/zkksdk/code-whale-dashboard" alt="License">
+  <img src="https://img.shields.io/badge/CodeWhale-v0.8.47-blue" alt="CodeWhale">
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome">
+  <img src="https://img.shields.io/badge/i18n-中文_|_English-purple" alt="i18n">
+</p>
 
-## Architecture (v2)
+<p align="center">
+  <b>🖥️ 现代化 Web 仪表盘，让命令行 AI 编程助手拥有图形化界面</b>
+</p>
 
-The Dashboard now communicates with CodeWhale through its native HTTP/SSE Runtime API (`codewhale-tui serve --http`) instead of spawning CLI commands.
+---
+
+## 这是什么？
+
+[CodeWhale](https://github.com/Hmbown/CodeWhale) 是一款基于 DeepSeek 的终端 AI 编程助手，功能强大但只有命令行界面。**CodeWhale Dashboard** 为它打造了一个现代化、多标签、支持中英双语的 Web 管理后台，让一切操作可视化。
+
+> 如果你觉得 CodeWhale 好用但命令行操作不够直观，这个项目就是为你准备的。
+
+## ✨ 功能亮点
+
+| 模块 | 说明 |
+|------|------|
+| 💬 **对话** | 全功能流式聊天，支持推理过程可视化、工具调用展示、Plan 面板 |
+| 📋 **会话管理** | 浏览/搜索/归档/重命名/批量操作，AI 助手帮你分析会话 |
+| 🔧 **MCP 管理** | 查看和重载 MCP 服务器，检查工具列表和连接状态 |
+| 📝 **任务系统** | 创建/查看/取消任务，Checklist、Gates、Tool Calls、Timeline 全展示 |
+| 🧩 **技能管理** | 浏览已安装技能，一键安装/卸载/启用/禁用 |
+| 📊 **数据分析** | Token 用量图表、费用追踪、按模型拆分 |
+| ⚙️ **配置** | 可视化管理 API Key、Base URL、模型、主题、语言 |
+| 🌍 **国际化** | 完整中英文双语支持 |
+| 🔄 **WebSocket** | 实时状态推送，无需刷新 |
+
+## 🏗️ 技术架构
 
 ```
 ┌──────────────────────────────────────────────┐
 │        CodeWhale Dashboard (Web GUI)         │
-│  React + Vite + Tailwind  :4321              │
-│  Express + WebSocket       :4322             │
+│  React 18 + Vite + Tailwind CSS  :4321       │
+│  Express + WebSocket + SQLite    :4322       │
 │    │                                         │
-│    │ HTTP/SSE                                │
+│    │ HTTP REST + SSE                         │
 │    ▼                                         │
 │  codewhale-tui serve --http  :7878           │
 │    │                                         │
 │    ▼                                         │
-│  DeepSeek API / NVIDIA API                   │
+│  DeepSeek API / 任何 OpenAI 兼容 API         │
 └──────────────────────────────────────────────┘
 ```
 
-## Features
+**前端**: React 18 · TypeScript · Vite · Tailwind CSS · Zustand · TanStack Query · Recharts · React Router · date-fns · Lucide Icons
 
-- **Chat Interface** — Full streaming chat with reasoning block visualization
-- **Session Management** — Browse, search, resume CodeWhale threads
-- **MCP Management** — View and reload MCP servers, inspect tools
-- **Task Scheduler** — Create and manage cron/one-time tasks
-- **Cost Analytics** — Monitor usage with daily and per-model breakdowns
-- **Model Browser** — List available models, switch active model
-- **Config Editor** — Visual editor for DeepSeek API settings
-- **Dark/Light Theme** — Modern terminal-inspired UI
+**后端**: Express · WebSocket (ws) · SQLite (better-sqlite3) · Axios
 
-## Prerequisites
+## 🚀 快速开始
 
-- Node.js 18+ and npm
-- CodeWhale installed (`npm install -g codewhale`) — v0.8.42+
-- DeepSeek API key configured (`DEEPSEEK_API_KEY` env var or `~/.deepseek/config.toml`)
+### 前置条件
 
-## Quick Start
+- [CodeWhale](https://github.com/Hmbown/CodeWhale) v0.8.47+
+- Node.js 18+
+
+### 一键启动
 
 ```bash
+# 1. 启动 CodeWhale HTTP 服务
+codewhale-tui serve --http --port 7878
+
+# 2. 启动 Dashboard
 cd code-whale-dashboard
-npm run setup
+npm install
 npm run dev
 ```
 
-The Dashboard will:
-1. Start `codewhale-tui serve --http` on port 7878
-2. Start the Dashboard backend on port 4322
-3. Start the Vite dev server on port 4321
+浏览器打开 `http://localhost:4321` 即可使用。
 
-Open [http://localhost:4321](http://localhost:4321)
-
-## Project Structure
+## 📂 项目结构
 
 ```
 code-whale-dashboard/
-├── frontend/                 # React + Vite + TypeScript + Tailwind
-│   ├── src/
-│   │   ├── pages/            # Overview, Chat, Sessions, Config, Models, Tasks, Analytics, Settings, MCP, Debug
-│   │   ├── components/       # Layout (Sidebar, Header, StatusBar), Common
-│   │   ├── api/              # API client (axios + SSE fetch)
-│   │   ├── store/            # Zustand state management
-│   │   └── hooks/            # useWebSocket
-│   └── vite.config.ts
+├── frontend/                 # React + Vite
+│   └── src/
+│       ├── api/              # API 客户端
+│       ├── components/       # Chat/PlanPanel/ToolCallCard...
+│       ├── i18n/             # 中英文翻译
+│       ├── pages/            # 15 个页面
+│       ├── store/            # Zustand 状态
+│       └── hooks/            # useWebSocket
 ├── backend/                  # Express + WebSocket
-│   ├── src/
-│   │   ├── api/              # config, sessions, chat, models, tasks, analytics, files, settings, mcp
-│   │   └── services/         # codewhale-client (HTTP API), session-manager, task-scheduler, cost-tracker
-│   └── package.json
-├── shared/                   # TypeScript type definitions
-└── scripts/                  # setup.js
+│   └── src/
+│       ├── api/              # REST 端点
+│       └── services/         # CodeWhale 客户端
+├── shared/                   # 共享类型定义
+└── scripts/                  # 工具脚本
 ```
 
-## API Endpoints
+## 🤝 参与贡献
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/health` | Dashboard health + CodeWhale status |
-| GET | `/api/models` | List available models |
-| POST | `/api/models/switch` | Switch active model |
-| GET | `/api/sessions` | List sessions (syncs with CodeWhale) |
-| POST | `/api/sessions` | Create session |
-| POST | `/api/chat` | Send message (non-streaming) |
-| POST | `/api/chat/stream` | SSE streaming chat |
-| GET | `/api/mcp/servers` | List MCP servers |
-| POST | `/api/mcp/reload` | Reload MCP config |
-| GET | `/api/mcp/capabilities` | CodeWhale capabilities |
-| WS | `/ws` | Real-time status updates |
+一个人的精力有限，欢迎大家一起完善！无论你是前端、后端、设计还是文档大佬，都能找到适合的任务：
 
-## Env Variables
+### 🎯 适合新手的任务（Good First Issues）
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `4322` | Dashboard backend port |
-| `NODE_ENV` | `development` | Node environment |
-| `CODEWHALE_HOST` | `127.0.0.1` | CodeWhale API host |
-| `CODEWHALE_PORT` | `7878` | CodeWhale API port |
-| `DATA_DIR` | `~/.code-whale-dashboard` | Data directory |
+- [ ] 优化移动端响应式布局
+- [ ] 添加暗色/亮色主题切换动画
+- [ ] 完善英文翻译（部分提示词仍为中文）
+- [ ] 编写单元测试
+- [ ] 添加 Docker 部署支持
+- [ ] 制作项目 Logo
 
-## Building for Production
+### 🔥 有挑战的任务
+
+- [ ] Chat 页面支持多 Tab 同时对话
+- [ ] 对话消息导出为 Markdown/PDF
+- [ ] 技能市场（浏览和安装社区技能）
+- [ ] 仪表盘小组件自定义布局
+- [ ] PWA 支持（桌面应用化）
+- [ ] Agent 对话历史可视化（树形分支）
+
+### 贡献流程
 
 ```bash
-npm run build
-npm start
+# 1. Fork 本仓库
+# 2. 创建你的特性分支
+git checkout -b feature/amazing-feature
+# 3. 提交更改
+git commit -m "feat: add amazing feature"
+# 4. 推送到分支
+git push origin feature/amazing-feature
+# 5. 发起 Pull Request
 ```
 
-## License
+## 🗺️ 路线图
 
-MIT
+- [x] 核心仪表盘（概览/对话/会话/配置）
+- [x] MCP 服务器管理
+- [x] 技能管理（安装/卸载/浏览）
+- [x] 任务系统（创建/追踪/Checklist）
+- [x] 数据分析（Token/费用图表）
+- [x] 中英文国际化
+- [x] AI 会话助手
+- [ ] 移动端适配
+- [ ] Docker 一键部署
+- [ ] 插件系统
+- [ ] 多用户支持
+
+## 📄 License
+
+MIT © 2026
+
+---
+
+<p align="center">
+  ⭐ 如果这个项目对你有用，请点个 Star 支持一下！
+</p>
