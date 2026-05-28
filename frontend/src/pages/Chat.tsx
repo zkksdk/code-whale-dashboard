@@ -583,7 +583,7 @@ function MessageBubble({ msg, onCopy, copied, t }: { msg: ChatMessage; onCopy: (
         <button onClick={()=>onCopy(msg.content)} className="flex items-center gap-1 text-[10px] text-gray-700 hover:text-gray-400 transition-colors">
           {copied?<Check size={11} className="text-green-400"/>:<Copy size={11}/>}{copied?t("chat.copied"):t("chat.copy")}
         </button>
-        {msg.token_count&&msg.token_count>0&&<span className="text-[10px] text-gray-700">{msg.token_count} tokens</span>}
+        {msg.token_count > 0 && <span className="text-[10px] text-gray-700">{msg.token_count} tokens</span>}
       </div>
     </div>
   );
