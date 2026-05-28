@@ -76,9 +76,9 @@ export default function WorkspacePage() {
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
         <StatPill label={t("models.title")} value={models.length} color="text-whale-400" />
         <StatPill label={t("skills.title")} value={skills.length} color="text-purple-400" />
-        <StatPill label="Features" value={features.filter((f: any) => f.enabled).length} color="text-green-400" sub={`/ ${features.length}`} />
+        <StatPill label={t("workspace.features")} value={features.filter((f: any) => f.enabled).length} color="text-green-400" sub={`/ ${features.length}`} />
         <StatPill label={t("workspace.gitStatus")} value={isGit ? ws.branch || "?" : t("workspace.noGit")} color={isGit ? "text-green-400" : "text-amber-400"} />
-        <StatPill label={t("analytics.sessions")} value={d.storage?.spillover?.count || 0} color="text-blue-400" sub="spillover" />
+        <StatPill label={t("analytics.sessions")} value={d.storage?.spillover?.count || 0} color="text-blue-400" sub={t("workspace.spillover")} />
         <StatPill label={t("config.model")} value={d.default_text_model?.split("-").pop() || "?"} color="text-gray-300" />
       </div>
 
@@ -86,16 +86,16 @@ export default function WorkspacePage() {
         {/* System Info Card */}
         <div className="bg-dark-900/50 border border-dark-800 rounded-lg p-5">
           <h3 className="text-sm font-medium text-gray-200 mb-3 flex items-center gap-2">
-            <Monitor size={15} className="text-blue-400" /> System
+            <Monitor size={15} className="text-blue-400" /> {t("workspace.system")}
           </h3>
           <div className="space-y-0">
             <InfoRow label={t("workspace.path")} value={d.workspace || ""} mono />
-            <InfoRow label={t("workspace.config") || t("overview.config_label")} value={d.config_path || ""} mono />
-            <InfoRow label={t("workspace.baseUrl") || t("overview.baseUrlLabel")} value={d.base_url || ""} mono />
-            <InfoRow label={t("workspace.apiKey") || t("overview.apiKeyLabel")} value={d.api_key?.source || "unknown"} />
+            <InfoRow label={t("workspace.configPath")} value={d.config_path || ""} mono />
+            <InfoRow label={t("overview.baseUrlLabel")} value={d.base_url || ""} mono />
+            <InfoRow label={t("workspace.apiKeySource")} value={d.api_key?.source || "-"} />
             <InfoRow label={t("config.model")} value={d.default_text_model || ""} />
-            <InfoRow label={t("workspace.platform") || t("overview.platform")} value={`${d.platform?.os || "?"} / ${d.platform?.arch || "?"}`} />
-            <InfoRow label={t("workspace.sandboxLabel") || t("overview.sandboxLabel")} value={d.sandbox?.available ? d.sandbox.kind || t("workspace.available") : t("workspace.unavailable")} />
+            <InfoRow label={t("workspace.system")} value={`${d.platform?.os || "?"} / ${d.platform?.arch || "?"}`} />
+            <InfoRow label={t("workspace.sandbox")} value={d.sandbox?.available ? d.sandbox.kind || t("workspace.available") : t("workspace.sandboxUnavailable")} />
           </div>
         </div>
 
@@ -212,7 +212,7 @@ export default function WorkspacePage() {
         {/* Storage */}
         <div className="bg-dark-900/50 border border-dark-800 rounded-lg p-5">
           <h3 className="text-sm font-medium text-gray-200 mb-3 flex items-center gap-2">
-            <HardDrive size={15} className="text-blue-400" /> Storage
+            <HardDrive size={15} className="text-blue-400" /> {t("workspace.storage")}
           </h3>
           <div className="space-y-1">
             <div className="flex items-center justify-between py-2 border-b border-dark-800/50">
@@ -239,7 +239,7 @@ export default function WorkspacePage() {
             <div className="flex items-center justify-between py-2">
               <div className="flex items-center gap-2">
                 <Box size={12} className="text-purple-400" />
-                <span className="text-xs text-gray-400">Sandbox</span>
+                <span className="text-xs text-gray-400">{t("workspace.sandbox")}</span>
               </div>
               <span className={`text-xs font-mono ${d.sandbox?.available ? "text-green-400" : "text-red-400"}`}>
                 {d.sandbox?.available ? d.sandbox.kind || t("workspace.available") : t("workspace.unavailable")}
