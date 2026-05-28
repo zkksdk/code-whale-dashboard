@@ -1,0 +1,19 @@
+{
+  "name": "code-whale-dashboard",
+  "version": "1.0.0",
+  "description": "CodeWhale Dashboard - External GUI Wrapper",
+  "private": true,
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "setup": "node scripts/setup.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "dependencies": {
+    "playwright": "^1.60.0"
+  }
+}
