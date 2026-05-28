@@ -18,7 +18,7 @@ import WorkspacePage from "./pages/Workspace";
 import AutomationsPage from "./pages/Automations";
 import TasksPage from "./pages/Tasks";
 import { useStore } from "./store";
-import { getHealth } from "./api/client";
+import { getSystem } from "./api/client";
 import { useWebSocket } from "./hooks/useWebSocket";
 
 export default function App() {
@@ -31,8 +31,8 @@ export default function App() {
   const { setSystemStatus } = useStore();
 
   useEffect(() => {
-    getHealth().then(r => {
-      const v = r.data?.data?.codewhale?.version;
+    getSystem().then(r => {
+      const v = r.data?.data?.doctor?.version;
       if (v) setSystemStatus({ version: v });
     }).catch(() => {});
   }, []);
