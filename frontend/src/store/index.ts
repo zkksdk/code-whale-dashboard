@@ -25,6 +25,7 @@ interface AppState {
     processRunning: boolean;
     provider: string;
     uptime: number;
+    version: string;
   };
   setSystemStatus: (status: Partial<AppState['systemStatus']>) => void;
 
@@ -61,6 +62,7 @@ export const useStore = create<AppState>((set, get) => ({
     processRunning: false,
     provider: 'unknown',
     uptime: 0,
+    version: '',
   },
   setSystemStatus: (status) => set((s) => ({
     systemStatus: { ...s.systemStatus, ...status }

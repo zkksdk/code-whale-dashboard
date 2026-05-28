@@ -30,7 +30,7 @@ export default function StatusBar() {
         {/* Version */}
         <div className="flex items-center gap-1">
           <Cpu size={11} />
-          <span>v0.8.42</span>
+          <span>v{systemStatus.version || '?'}</span>
         </div>
         {/* Timestamp */}
         <span className="font-mono">{formatTimestamp(Date.now())}</span>
