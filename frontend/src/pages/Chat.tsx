@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Send, Bot, User, Copy, Brain, ChevronDown, ChevronRight, StopCircle, Plus, Wifi, WifiOff, Check, MessageSquare, X, Search, ListTodo, GanttChartSquare, FolderOpen, Edit2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
@@ -49,7 +49,7 @@ function isToolKind(kind: string): boolean {
 
 export default function Chat() {
   const { sessionId } = useParams<{ sessionId: string }>();
-  
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [input, setInput] = useState("");
@@ -149,6 +149,15 @@ export default function Chat() {
   }, [sessionId, navigate]);
 
   useEffect(() => { if (sessionId) localStorage.setItem("code-whale-last-session", sessionId); }, [sessionId]);
+
+  // Show new session dialog if navigated from sessions page
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setNewSessionTitle("");
+      setNewSessionWorkspace(workspace);
+      setShowNewSessionDialog(true);
+    }
+  }, [searchParams, workspace]);
 
   const persistMessages = useCallback((msgs: ChatMessage[]) => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs.slice(-200))); } catch {}
@@ -515,6 +524,31 @@ export default function Chat() {
         </div>
         <div className="mt-1.5 text-[10px] text-gray-700 text-center">{isStreaming?t("chat.stop")+" to interrupt":t("chat.footer")}</div>
       </form>
+      {showNewSessionDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={()=>setShowNewSessionDialog(false)}>
+          <div className="bg-dark-950 border border-dark-700 rounded-lg shadow-2xl w-full max-w-sm p-5" onClick={e=>e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-gray-200 mb-4">{t("chat.newChat") || "New Session"}</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[11px] text-gray-500 mb-1">{t("chat.sessionTitle") || "Title"}</label>
+                <input value={newSessionTitle} onChange={e=>setNewSessionTitle(e.target.value)} placeholder={t("chat.newChat") || "New Chat"}
+                  className="w-full bg-dark-900 border border-dark-700 rounded px-2.5 py-1.5 text-sm text-gray-200 placeholder-gray-600 outline-none focus:border-whale-500/50"
+                  autoFocus onKeyDown={e=>{if(e.key==="Enter") handleCreateSession();}} />
+              </div>
+              <div>
+                <label className="block text-[11px] text-gray-500 mb-1">{t("chat.workspace") || "Workspace"}</label>
+                <input value={newSessionWorkspace} onChange={e=>setNewSessionWorkspace(e.target.value)}
+                  className="w-full bg-dark-900 border border-dark-700 rounded px-2.5 py-1.5 text-sm text-gray-200 placeholder-gray-600 outline-none focus:border-whale-500/50 font-mono"
+                  placeholder={workspace || "C:\\path\\to\\project"} />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button onClick={()=>setShowNewSessionDialog(false)} className="flex-1 px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300 border border-dark-700 rounded transition-colors">{t("common.cancel") || "Cancel"}</button>
+              <button onClick={handleCreateSession} className="flex-1 px-3 py-1.5 text-xs bg-whale-600 hover:bg-whale-500 text-white rounded transition-colors">{t("common.create") || "Create"}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
