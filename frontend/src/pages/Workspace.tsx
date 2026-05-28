@@ -129,7 +129,7 @@ export default function WorkspacePage() {
         {/* Features */}
         <div className="bg-dark-900/50 border border-dark-800 rounded-lg p-5">
           <h3 className="text-sm font-medium text-gray-200 mb-3 flex items-center gap-2">
-            <Zap size={15} className="text-amber-400" /> Features
+            <Zap size={15} className="text-amber-400" /> {t("workspace.features")}
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {features.map((f: any) => (
