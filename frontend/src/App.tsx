@@ -15,6 +15,7 @@ import Debug from "./pages/Debug";
 import Mcp from "./pages/Mcp";
 import SkillsPage from "./pages/Skills";
 import WorkspacePage from "./pages/Workspace";
+import SubAgentsPage from "./pages/SubAgents";
 import AutomationsPage from "./pages/Automations";
 import TasksPage from "./pages/Tasks";
 import { useStore } from "./store";
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="/skills" element={<SkillsPage />} />
             <Route path="/mcp" element={<Mcp />} />
             <Route path="/workspace" element={<WorkspacePage />} />
+          <Route path="/subagents" element={<SubAgentsPage />} />
             <Route path="/automations" element={<AutomationsPage />} />            <Route path="/analytics" element={<Analytics />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/settings" element={<Settings />} />

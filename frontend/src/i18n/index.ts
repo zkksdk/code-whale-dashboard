@@ -13,7 +13,7 @@ export const zh = {
     analytics: '分析',
     settings: '设置',
     debug: '调试',
-    tasks: '任务'
+    tasks: '任务', subagents: '子代理'
   },
   overview: {
     title: '仪表盘',
@@ -196,6 +196,25 @@ export const zh = {
     skillsCount: '{count} 个技能',
     more: '+{count} 更多',
     installedSkills: '已安装的技能', switchWorkspace: '切换工作区', browse: '浏览文件夹...'
+  },
+  subagents: {
+    title: '子代理',
+    subtitle: '监控和管理并行 AI 子代理',
+    status: '状态',
+    enabled: '已启用',
+    disabled: '已禁用',
+    maxConcurrent: '最大并发',
+    running: '运行中',
+    completed: '已完成',
+    failed: '失败',
+    recentActivity: '最近活动',
+    noActivity: '暂无子代理活动',
+    noActivityHint: '在 Agent 模式下开始对话即可观察子代理',
+    disable: '禁用',
+    enable: '启用',
+    maxSubagentsHint: '通过 config.toml 或 --max-subagents 参数配置',
+    howItWorks: '子代理工作原理',
+    description: '子代理是主代理在对话中动态生成的并行 AI 工作者，它们同时处理独立的子任务，加速复杂操作。通过 --max-subagents 参数或 config.toml 配置最大并发数。',
   },
   skills: {
     title: '技能与扩展',
@@ -491,7 +510,7 @@ export const en = {
     analytics: 'Analytics',
     settings: 'Settings',
     debug: 'Debug',
-    tasks: 'Tasks'
+    tasks: 'Tasks', subagents: 'Sub-Agents'
   },
   overview: {
     title: 'Dashboard',
@@ -674,6 +693,25 @@ export const en = {
     skillsCount: '{count} skills',
     more: '+{count} more',
     installedSkills: 'Installed skills', switchWorkspace: 'Switch Workspace', browse: 'Browse folders...'
+  },
+  subagents: {
+    title: 'Sub-Agents',
+    subtitle: 'Monitor and manage parallel AI sub-agents',
+    status: 'Status',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    maxConcurrent: 'Max Concurrent',
+    running: 'Running',
+    completed: 'Completed',
+    failed: 'Failed',
+    recentActivity: 'Recent Activity',
+    noActivity: 'No sub-agent activity yet',
+    noActivityHint: 'Start a conversation in Agent mode to see sub-agents in action',
+    disable: 'Disable',
+    enable: 'Enable',
+    maxSubagentsHint: 'Configure via config.toml or --max-subagents flag',
+    howItWorks: 'How Sub-Agents Work',
+    description: 'Sub-agents are parallel AI workers spawned by the main agent during conversations. They handle independent subtasks simultaneously, speeding up complex operations. Configure max concurrent agents via --max-subagents flag or config.toml.',
   },
   skills: {
     title: 'Skills & Extensions',

@@ -1,5 +1,5 @@
 import React from "react";
-import { LayoutDashboard, MessageCircle, MessageSquare, Settings, Brain, Clock, BarChart3, Sliders, Bug, ChevronLeft, ChevronRight, Fish, Server, FolderOpen, GitBranch, RefreshCw, ListChecks } from "lucide-react";
+import { LayoutDashboard, MessageCircle, MessageSquare, Settings, Brain, Clock, BarChart3, Sliders, Bug, ChevronLeft, ChevronRight, Fish, Server, FolderOpen, GitBranch, RefreshCw, ListChecks, Users } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "../../i18n/useTranslation";
 
@@ -19,6 +19,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     { path: "/skills", label: t("nav.skills"), icon: FolderOpen },
     { path: "/mcp", label: t("nav.mcp"), icon: Server },
     { path: "/tasks", label: t("nav.tasks"), icon: ListChecks },
+    { path: "/subagents", label: t("nav.subagents"), icon: Users },
     { path: "/automations", label: t("nav.automations"), icon: RefreshCw },
     { path: "/analytics", label: t("nav.analytics"), icon: BarChart3 },
     { path: "/settings", label: t("nav.settings"), icon: Sliders },
