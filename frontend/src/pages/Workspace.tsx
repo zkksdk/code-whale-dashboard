@@ -1,8 +1,10 @@
-﻿import React from "react";
+﻿import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FolderOpen, GitBranch, HardDrive, AlertCircle, Cpu, Box, Wrench, Monitor, Key, Zap, CheckCircle, XCircle, Server, Database, FileText } from "lucide-react";
-import { getSystem } from "../api/client";
+import { getSystem, updateConfig } from "../api/client";
+import { useStore } from "../store";
 import { useTranslation } from "../i18n/useTranslation";
+import WorkspacePicker from "../components/Chat/WorkspacePicker";
 
 function StatPill({ label, value, color = "text-gray-200", sub }: { label: string; value: string | number; color?: string; sub?: string }) {
   return (
@@ -34,6 +36,7 @@ function FeatureBadge({ enabled, name }: { enabled: boolean; name: string }) {
 
 export default function WorkspacePage() {
   const { t } = useTranslation();
+  const { addToast } = useStore();
   const { data: sysData, isLoading } = useQuery({
     queryKey: ["system"],
     queryFn: () => getSystem().then((r: any) => r.data?.data || r.data || {}),
@@ -44,6 +47,17 @@ export default function WorkspacePage() {
   const ws = sysData?.workspace || {};
   const features = sysData?.features || [];
   const models = sysData?.models || [];
+  const [switchingWorkspace, setSwitchingWorkspace] = useState(false);
+  const [selectedWorkspace, setSelectedWorkspace] = useState("");
+
+  const handleSwitchWorkspace = async () => {
+    if (!selectedWorkspace) return;
+    try {
+      await updateConfig({ workspace: selectedWorkspace });
+      addToast({ type: "success", message: "Workspace set to " + selectedWorkspace.split(/[\\/]/).pop() });
+      setSwitchingWorkspace(false);
+    } catch { addToast({ type: "error", message: "Failed to update workspace" }); }
+  };
   const skills = sysData?.skills || [];
 
   const isGit = ws.git_repo;
@@ -70,6 +84,40 @@ export default function WorkspacePage() {
             {d.platform?.os || "?"} / {d.platform?.arch || "?"}
           </span>
         </div>
+      </div>
+
+      {/* Workspace Switcher */}
+      <div className="bg-dark-900/50 border border-dark-800 rounded-lg p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <FolderOpen size={14} className="text-whale-400" />
+          <h3 className="text-sm font-medium text-gray-200">{t("workspace.switchWorkspace") || "Switch Workspace"}</h3>
+        </div>
+        {!switchingWorkspace ? (
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <button onClick={() => { setSelectedWorkspace(d.workspace || ""); setSwitchingWorkspace(true); }}
+                className="w-full flex items-center gap-2 px-3 py-2 bg-dark-900 border border-dark-700 rounded-lg text-sm text-gray-400 hover:text-gray-200 hover:border-dark-600 transition-colors text-left">
+                <FolderOpen size={14} className="text-whale-400/50 flex-shrink-0" />
+                <span className="truncate flex-1 font-mono">{d.workspace || "-"}</span>
+                <span className="text-[10px] text-gray-600">Click to change</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <WorkspacePicker value={selectedWorkspace} onChange={setSelectedWorkspace} />
+            <div className="flex gap-2">
+              <button onClick={() => setSwitchingWorkspace(false)}
+                className="flex-1 px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300 border border-dark-700 rounded transition-colors">
+                {t("common.cancel") || "Cancel"}
+              </button>
+              <button onClick={handleSwitchWorkspace} disabled={!selectedWorkspace}
+                className="flex-1 px-3 py-1.5 text-xs bg-whale-600 hover:bg-whale-500 disabled:opacity-30 text-white rounded transition-colors">
+                {t("common.apply") || "Apply"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Quick Stats Row */}

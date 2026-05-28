@@ -106,7 +106,7 @@ export const zh = {
     waiting: '等待响应...',
     stop: '停止',
     retry: '重试',
-    delete: '删除', create: '创建',
+    delete: '删除', create: '创建', apply: '应用',
     edit: '编辑',
     clear: '清空',
     clearConfirm: '确定清空对话？',
@@ -195,7 +195,7 @@ export const zh = {
     filesCount: '{count} 个文件',
     skillsCount: '{count} 个技能',
     more: '+{count} 更多',
-    installedSkills: '已安装的技能'
+    installedSkills: '已安装的技能', switchWorkspace: '切换工作区', browse: '浏览文件夹...'
   },
   skills: {
     title: '技能与扩展',
@@ -584,7 +584,7 @@ export const en = {
     waiting: 'Waiting...',
     stop: 'Stop',
     retry: 'Retry',
-    delete: 'Delete', create: 'Create',
+    delete: 'Delete', create: 'Create', apply: 'Apply',
     edit: 'Edit',
     clear: 'Clear',
     clearConfirm: 'Clear chat?',
@@ -673,7 +673,7 @@ export const en = {
     filesCount: '{count} files',
     skillsCount: '{count} skills',
     more: '+{count} more',
-    installedSkills: 'Installed skills'
+    installedSkills: 'Installed skills', switchWorkspace: 'Switch Workspace', browse: 'Browse folders...'
   },
   skills: {
     title: 'Skills & Extensions',
