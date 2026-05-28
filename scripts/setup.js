@@ -67,7 +67,7 @@ try {
 // Create .env file
 const envPath = path.join(backendDir, '.env');
 if (!fs.existsSync(envPath)) {
-  const envContent = `PORT=3001
+  const envContent = `PORT=4322
 NODE_ENV=development
 DATA_DIR=${dataDir}
 `;
@@ -79,7 +79,7 @@ console.log('\n🎉 Setup complete!');
 console.log('\nTo start the dashboard:');
 console.log('1. Start backend: cd backend && npm run dev');
 console.log('2. Start frontend: cd frontend && npm run dev');
-console.log('3. Open http://localhost:3000 in your browser');
+console.log('3. Open http://localhost:4321 in your browser');
 console.log('\nOr use the root package.json scripts:');
 console.log('  npm run install:all  # Install all dependencies');
 console.log('  npm run dev          # Start both servers');

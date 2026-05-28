@@ -40,7 +40,7 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../../frontend/dist")));
+  app.use(express.static(path.resolve(__dirname, "../../frontend/dist")));
 }
 
 app.use("/api/config", configApi);
@@ -62,7 +62,7 @@ app.use("/api/usage", usageApi);
 app.get("/api/health", async (req, res) => {
   const serverStatus = codewhaleClient.getServerStatus();
   let cwHealth = null;
-  try { cwHealth = await codewhaleClient.healthCheck(); } catch {}
+  try { cwHealth = await codewhaleClient.healthCheck(); } catch (e) { console.warn('[health] CodeWhale health check failed:', e.message); }
   res.json({
     status: "ok",
     uptime: process.uptime(),
@@ -83,7 +83,7 @@ wss.on("connection", (ws) => {
   console.log(`WS client connected (${clients.size})`);
   ws.send(JSON.stringify({ type: "connected", data: { clientCount: clients.size } }));
   ws.on("close", () => { clients.delete(ws); broadcast({ type: "client_count", data: { count: clients.size } }); });
-  ws.on("error", () => { clients.delete(ws); });
+  ws.on("error", (err) => { console.warn("[ws] client error:", err.message); clients.delete(ws); });
 });
 
 function broadcast(data) {

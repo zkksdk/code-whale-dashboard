@@ -25,7 +25,7 @@ export default function App() {
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
   const { theme, toasts, removeToast } = useStore();
 
-  useWebSocket("ws://localhost:4322/ws");
+  useWebSocket(`ws://${window.location.hostname}:4322/ws`);
 
   useEffect(() => { document.documentElement.classList.toggle("dark", theme === "dark"); }, [theme]);
 
