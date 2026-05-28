@@ -34,7 +34,7 @@ const wss = new WebSocketServer({ server, path: "/ws" });
 const clients = new Set();
 
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: ["http://localhost:4321", "http://localhost:5173", "http://localhost:3000"] }));
+app.use(cors({ origin: (process.env.CORS_ORIGINS || "http://localhost:4321,http://localhost:5173").split(",") }));
 app.use(morgan("dev"));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -113,7 +113,7 @@ async function init() {
 app.get("*", (req, res, next) => {
   if (req.path.startsWith("/api/") || req.path.startsWith("/ws")) return next();
   if (process.env.NODE_ENV === "production") {
-    res.sendFile(path.join(__dirname, "../../frontend/dist/index.html"));
+    res.sendFile(path.resolve(__dirname, "../../frontend/dist/index.html"));
   } else {
     res.json({ error: "Frontend not available in dev mode" });
   }
