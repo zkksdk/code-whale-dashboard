@@ -18,7 +18,7 @@ export function testConfig() { return api.post("/config/test"); }
 // Sessions
 export function getSessions(params?: { page?: number; limit?: number; search?: string; include_archived?: boolean; archived_only?: boolean }) { return api.get("/sessions", { params }); }
 export function getSession(id: string) { return api.get(`/sessions/${id}`); }
-export function createSession(data: { title?: string; model?: string }) { return api.post("/sessions", data); }
+export function createSession(data: { title?: string; model?: string; workspace?: string }) { return api.post("/sessions", data); }
 export function deleteSession(id: string) { return api.delete(`/sessions/${id}`); }
 export function togglePinSession(id: string) { return api.post(`/sessions/${id}/pin`); }
 export function getSessionMessages(id: string) { return api.get(`/sessions/${id}/messages`); }

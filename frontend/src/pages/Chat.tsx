@@ -60,6 +60,9 @@ export default function Chat() {
   const [workspace, setWorkspace] = useState("");
   const [workspaceEditing, setWorkspaceEditing] = useState(false);
   const [workspaceDraft, setWorkspaceDraft] = useState("");
+  const [showNewSessionDialog, setShowNewSessionDialog] = useState(false);
+  const [newSessionTitle, setNewSessionTitle] = useState("");
+  const [newSessionWorkspace, setNewSessionWorkspace] = useState("");
   const [streamError, setStreamError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showSessionSwitcher, setShowSessionSwitcher] = useState(false);
@@ -158,11 +161,23 @@ export default function Chat() {
     setShowSessionSwitcher(false); setSessionSearch(""); navigate("/chat/"+id);
   }, [navigate]);
 
-  const handleNewSession = useCallback(async () => {
-    try { const res = await createSession({ title: "New Chat" });
-      const id = res.data?.data?.id; if (id) { setShowSessionSwitcher(false); navigate("/chat/"+id); }
+  const handleNewSession = useCallback(() => {
+    setNewSessionTitle("");
+    setNewSessionWorkspace(workspace);
+    setShowNewSessionDialog(true);
+  }, [workspace]);
+
+  const handleCreateSession = useCallback(async () => {
+    try {
+      const res = await createSession({ title: newSessionTitle || "New Chat", workspace: newSessionWorkspace || undefined });
+      const id = res.data?.data?.id;
+      if (id) {
+        setShowNewSessionDialog(false);
+        setShowSessionSwitcher(false);
+        navigate("/chat/"+id);
+      }
     } catch (err: any) { addToast({ type: "error", message: t("chat.sessionCreationFailed") }); }
-  }, [navigate, addToast, t]);
+  }, [newSessionTitle, newSessionWorkspace, navigate, addToast, t]);
 
   const detectToolResults = useCallback((chunk: string) => {
     try { const p = JSON.parse(chunk);
@@ -455,23 +470,11 @@ export default function Chat() {
         <div className="flex items-center gap-2 mb-1.5">
           <span className="flex items-center gap-1 text-[10px] text-gray-600">
             <span>{t("chat.workspace")}:</span>
-            {workspaceEditing ? (
-              <span className="flex items-center gap-0.5">
-                <input value={workspaceDraft} onChange={e=>setWorkspaceDraft(e.target.value)}
-                  className="bg-dark-900 border border-whale-500/50 rounded px-1.5 py-0.5 text-[10px] text-gray-200 w-40 outline-none"
-                  autoFocus onKeyDown={e=>{if(e.key==="Enter"){setWorkspace(workspaceDraft);setWorkspaceEditing(false);}if(e.key==="Escape"){setWorkspaceEditing(false);}}} />
-                <button type="button" onClick={()=>{setWorkspace(workspaceDraft);setWorkspaceEditing(false);}} className="p-0.5 text-green-400 hover:text-green-300"><Check size={11}/></button>
-                <button type="button" onClick={()=>setWorkspaceEditing(false)} className="p-0.5 text-gray-500 hover:text-gray-400"><X size={11}/></button>
-              </span>
-            ) : (
-              <button type="button" onClick={()=>{setWorkspaceDraft(workspace);setWorkspaceEditing(true);}}
-                className="flex items-center gap-1 bg-dark-900 border border-dark-700 rounded px-1.5 py-0.5 text-gray-400 hover:text-gray-200 hover:border-dark-600 transition-colors max-w-[200px] group"
-                title={workspace || t("chat.workspacePlaceholder")}>
-                <FolderOpen size={11} className="flex-shrink-0 text-whale-400" />
+            <span className="flex items-center gap-1 bg-dark-900 border border-dark-700 rounded px-1.5 py-0.5 text-gray-500 max-w-[200px]"
+                title={workspace || ""}>
+                <FolderOpen size={11} className="flex-shrink-0 text-whale-400/50" />
                 <span className="text-[10px] truncate">{workspace ? workspace.split(/[\\\\/]/).pop() : t("chat.workspacePlaceholder")}</span>
-                <Edit2 size={9} className="flex-shrink-0 text-gray-700 group-hover:text-gray-500" />
-              </button>
-            )}
+              </span>
           </span>
           <span className={"flex items-center gap-0.5 text-[10px] "+(wsConnected?"text-green-400":"text-red-400")}>
             {wsConnected?<Wifi size={10}/>:<WifiOff size={10}/>}{wsConnected?t("chat.online"):t("chat.offline")}
