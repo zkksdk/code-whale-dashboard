@@ -86,6 +86,9 @@ export function getCostBreakdown(params?: { days?: number }) { return api.get("/
 
 // Files
 export function uploadFiles(files: FileList | File[]) { const formData = new FormData(); Array.from(files).forEach((file) => { formData.append("files", file); }); return api.post("/files/upload", formData, { headers: { "Content-Type": "multipart/form-data" } }); }
+
+// Files (workspace)
+export function listFiles(dirPath?: string) { return api.get("/files/list", { params: { path: dirPath || "" } }); }
 export function getFiles() { return api.get("/files"); }
 export function deleteFile(id: string) { return api.delete(`/files/${id}`); }
 

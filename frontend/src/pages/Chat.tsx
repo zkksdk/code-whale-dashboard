@@ -7,7 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useStore } from "../store";
 import { useTranslation } from "../i18n/useTranslation";
-import { getSessionMessages, createSession, getSession, steerTurn, interruptTurn, getSessions, getSystem } from "../api/client";
+import { getSessionMessages, createSession, getSession, steerTurn, interruptTurn, getSessions, getSystem, listFiles } from "../api/client";
 import ToolCallCard, { ToolCallPart } from "../components/Chat/ToolCallCard";
 import WorkPanel, { TodoItem } from "../components/Chat/WorkPanel";
 import PlanPanel, { PlanData, PlanStep } from "../components/Chat/PlanPanel";
@@ -77,11 +77,24 @@ export default function Chat() {
   const [rightWidth, setRightWidth] = useState(280);
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [plan, setPlan] = useState<PlanData>({ steps: [] });
+  const [workspaceRoot, setWorkspaceRoot] = useState("");
+  useEffect(() => { getSystem().then((res: any) => {
+    const ws = res.data?.data?.workspace?.workspace || res.data?.workspace?.workspace || "";
+    if (ws) { setWorkspaceRoot(ws);
+      listFiles(ws).then((res2: any) => {
+        const entries = res2.data?.data?.entries || [];
+        setWorkspaceFiles(entries.map((e: any) => ({ name: e.name, path: e.path, isDir: e.isDirectory })));
+      }).catch(() => {});
+    }
+  }).catch(() => {}); }, []);
   const [localMessages, setLocalMessages] = useState<ChatMessage[]>(() => {
     try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : []; }
     catch { return []; }
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const streamingContentRef = useRef("");
+  const streamingReasoningRef = useRef("");
+  const currentToolPartsRef = useRef<Map<string, ToolCallPart>>(new Map());
   const { isStreaming, setStreaming, wsConnected, addToast, theme, setTheme, language, setLanguage } = useStore();
   const queryClient = useQueryClient();
   const abortRef = useRef<AbortController | null>(null);
@@ -161,7 +174,7 @@ export default function Chat() {
   }, []);
 
   const handleSSEEvent = useCallback((ev: any) => {
-    if (ev.done) { setStreaming(false); setStreamingContent(""); setStreamingReasoning(""); return; }
+    if (ev.done) { setStreaming(false); setStreamingContent(""); setStreamingReasoning(""); streamingContentRef.current = ""; streamingReasoningRef.current = ""; return; }
     if (ev.error) { setStreamError(String(ev.error)); setStreaming(false); return; }
 
     if (ev.event === "item.started" && isToolKind(ev.kind || "")) {
@@ -176,7 +189,7 @@ export default function Chat() {
     }
     if (ev.event === "item.failed") {
       setCurrentToolParts(prev => { const n = new Map(prev); const ex = n.get(ev.item_id || "");
-        if (ex) ex.status = "error"; return n; }); return;
+        if (ex) ex.status = "error"; return n; }); currentToolPartsRef.current.clear(); return;
     }
     
     // Tool delta
@@ -191,13 +204,13 @@ export default function Chat() {
     
     // Reasoning delta (must check BEFORE text delta since agent_reasoning comes first)
     if (ev.event === "item.delta" && isReasoningKind(ev.kind || "")) {
-      const chunk = ev.chunk; if (typeof chunk === "string") setStreamingReasoning(p => p + chunk);
+      const chunk = ev.chunk; if (typeof chunk === "string") setStreamingReasoning(p => p + chunk); streamingReasoningRef.current += chunk;
       return;
     }
     
     // Text delta
     if (ev.event === "item.delta" && isTextKind(ev.kind || "")) {
-      const chunk = ev.chunk; if (typeof chunk === "string") setStreamingContent(p => p + chunk);
+      const chunk = ev.chunk; if (typeof chunk === "string") setStreamingContent(p => p + chunk); streamingContentRef.current += chunk;
       return;
     }
 
@@ -221,25 +234,26 @@ export default function Chat() {
         const mc = [...msgs]; const last = mc[mc.length-1];
         if (last && last.role==="assistant" && last.status==="streaming") {
           const parts: ChatPart[] = [];
-          if (streamingReasoning) parts.push({ type:"thinking", content: streamingReasoning, done:true });
-          const content = streamingContent || last.content || "(no response)";
+          if (streamingReasoningRef.current) parts.push({ type:"thinking", content: streamingReasoningRef.current, done:true });
+          const sc = streamingContentRef.current || last.content || "";
+          const content = sc || "(no response)";
           if (content !== "(no response)") parts.push({ type:"text", content });
-          setCurrentToolParts(prev => { prev.forEach(p => parts.push(p)); return prev; });
-          const updated = { ...last, content, reasoning: streamingReasoning||last.reasoning, parts: parts.length>0 ? parts : last.parts, status: "completed", timestamp: new Date().toISOString() };
+          currentToolPartsRef.current.forEach(p => parts.push(p)); setCurrentToolParts(new Map()); currentToolPartsRef.current = new Map();
+          const updated = { ...last, content, reasoning: streamingReasoningRef.current||last.reasoning, parts: parts.length>0 ? parts : last.parts, status: "completed", timestamp: new Date().toISOString() };
           const result = [...mc.slice(0,-1), updated]; persistMessages(result); return result;
         } return mc;
       });
-      setStreamingContent(""); setStreamingReasoning(""); setCurrentToolParts(new Map());
+      setStreamingContent(""); setStreamingReasoning(""); streamingContentRef.current = ""; streamingReasoningRef.current = ""; setCurrentToolParts(new Map());
       queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
       return;
     }
-  }, [setStreaming, persistMessages, detectToolResults, streamingReasoning, streamingContent, sessionId, queryClient]);
+  }, [setStreaming, persistMessages, detectToolResults, sessionId, queryClient]);
 
   const handleSubmit = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || isStreaming || !sessionId) return;
     const userMessage = input.trim();
-    setInput(""); setStreamError(null); setStreamingContent(""); setStreamingReasoning("");
+    setInput(""); setStreamError(null); setStreamingContent(""); setStreamingReasoning(""); streamingContentRef.current = ""; streamingReasoningRef.current = "";
     setCurrentToolParts(new Map()); setTodos([]); setPlan({ steps: [] });
     const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", content: userMessage, timestamp: new Date().toISOString() };
     const assistantMsg: ChatMessage = { id: (Date.now()+1).toString(), role: "assistant", content: "", parts: [], timestamp: new Date().toISOString(), status: "streaming" };
