@@ -79,8 +79,8 @@ export default function Chat() {
   const [plan, setPlan] = useState<PlanData>({ steps: [] });
   const [workspaceRoot, setWorkspaceRoot] = useState("");
   useEffect(() => { getSystem().then((res: any) => {
-    const ws = res.data?.data?.workspace?.workspace || res.data?.workspace?.workspace || "";
-    if (ws) { setWorkspaceRoot(ws);
+    const ws = res.data?.data?.workspace?.workspace || res.data?.doctor?.workspace || res.data?.workspace?.workspace || "";
+    if (ws) { setWorkspaceRoot(ws); setWorkspace(ws);
       listFiles(ws).then((res2: any) => {
         const entries = res2.data?.data?.entries || [];
         setWorkspaceFiles(entries.map((e: any) => ({ name: e.name, path: e.path, isDir: e.isDirectory })));
