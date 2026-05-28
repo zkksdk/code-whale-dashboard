@@ -40,11 +40,11 @@ export default function Models() {
             </div>
             <div className="space-y-1.5">
               <InfoRow label="Base URL" value={m.base_url || caps.base_url || "—"} />
-              <InfoRow label="Request Mode" value={caps.request_payload_mode || "—"} />
-              <InfoRow label="Context" value={caps.context_window?.toLocaleString() || "—"} />
-              <InfoRow label="Max Output" value={caps.max_output?.toLocaleString() || "—"} />
-              <InfoRow label="Thinking" value={caps.thinking_supported ? "Yes" : "No"} ok={caps.thinking_supported} />
-              <InfoRow label="Cache" value={caps.cache_telemetry_supported ? "Yes" : "No"} ok={caps.cache_telemetry_supported} />
+              <InfoRow label={t("models.requestMode")} value={caps.request_payload_mode || "—"} />
+              <InfoRow label={t("models.contextWindow")} value={caps.context_window?.toLocaleString() || "—"} />
+              <InfoRow label={t("models.maxTokens")} value={caps.max_output?.toLocaleString() || "—"} />
+              <InfoRow label={t("models.thinking")} value={caps.thinking_supported ? "Yes" : "No"} ok={caps.thinking_supported} />
+              <InfoRow label={t("models.cache")} value={caps.cache_telemetry_supported ? "Yes" : "No"} ok={caps.cache_telemetry_supported} />
             </div>
           </div>
         ))}

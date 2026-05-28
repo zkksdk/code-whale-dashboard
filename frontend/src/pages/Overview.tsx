@@ -119,24 +119,24 @@ export default function Overview() {
 
       {/* Stat Cards Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        <StatCard icon={Brain} label="Provider" value={d?.doctor?.capability?.resolved_provider || d?.doctor?.api_key?.source || "—"} color="bg-purple-600/20 text-purple-400" />
-        <StatCard icon={Zap} label="Model" value={d?.doctor?.default_text_model || "—"} color="bg-amber-600/20 text-amber-400" />
-        <StatCard icon={BarChart3} label="Context" value={(d?.doctor?.capability?.context_window || 0) >= 1000000 ? "1M" : String(d?.doctor?.capability?.context_window || "—")} sub="tokens" color="bg-blue-600/20 text-blue-400" />
-        <StatCard icon={Activity} label="Turns" value={a?.sessionCount || analytics?.data?.data?.totalTurns || "—"} color="bg-green-600/20 text-green-400" />
-        <StatCard icon={FolderOpen} label="Skills" value={skillCount} color="bg-cyan-600/20 text-cyan-400" />
-        <StatCard icon={Database} label="Cost" value={`$${(a?.totalCost || 0).toFixed(4)}`} color="bg-rose-600/20 text-rose-400" />
+        <StatCard icon={Brain} label={t("overview.provider")} value={d?.doctor?.capability?.resolved_provider || d?.doctor?.api_key?.source || "—"} color="bg-purple-600/20 text-purple-400" />
+        <StatCard icon={Zap} label={t("overview.model")} value={d?.doctor?.default_text_model || "—"} color="bg-amber-600/20 text-amber-400" />
+        <StatCard icon={BarChart3} label={t("overview.contextWindow")} value={(d?.doctor?.capability?.context_window || 0) >= 1000000 ? "1M" : String(d?.doctor?.capability?.context_window || "—")} sub={t("overview.tokens")} color="bg-blue-600/20 text-blue-400" />
+        <StatCard icon={Activity} label={t("overview.turnsShort")} value={a?.sessionCount || analytics?.data?.data?.totalTurns || "—"} color="bg-green-600/20 text-green-400" />
+        <StatCard icon={FolderOpen} label={t("overview.skillsShort")} value={skillCount} color="bg-cyan-600/20 text-cyan-400" />
+        <StatCard icon={Database} label={t("overview.costShort")} value={`$${(a?.totalCost || 0).toFixed(4)}`} color="bg-rose-600/20 text-rose-400" />
       </div>
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Config */}
-        <Section title="Configuration" icon={Settings}>
+        <Section title={t("overview.configSection")} icon={Settings}>
           <div className="space-y-0">
-            <InfoRow label="Config File" value={d?.doctor?.config_path || "—"} ok={d?.doctor?.config_present} />
+            <InfoRow label={t("overview.configFile")} value={d?.doctor?.config_path || "—"} ok={d?.doctor?.config_present} />
             <InfoRow label={t("overview.baseUrlLabel")} value={d?.doctor?.base_url || "—"} />
-            <InfoRow label="API Key Source" value={d?.doctor?.api_key?.source || "—"} />
-            <InfoRow label="Strict Tool Mode" value={d?.doctor?.strict_tool_mode?.status || "—"} ok={d?.doctor?.strict_tool_mode?.enabled} />
-            <InfoRow label="Thinking" value={d?.doctor?.capability?.thinking_supported ? "Supported" : t("overview.no_label")} ok={d?.doctor?.capability?.thinking_supported} />
+            <InfoRow label={t("overview.apiKeySource")} value={d?.doctor?.api_key?.source || "—"} />
+            <InfoRow label={t("overview.strictToolMode")} value={d?.doctor?.strict_tool_mode?.status || "—"} ok={d?.doctor?.strict_tool_mode?.enabled} />
+            <InfoRow label={t("overview.thinkingSupported")} value={d?.doctor?.capability?.thinking_supported ? t("overview.supported") : t("overview.no_label")} ok={d?.doctor?.capability?.thinking_supported} />
             <InfoRow label={t("overview.cacheTelemetry")} value={d?.doctor?.capability?.cache_telemetry_supported ? t("overview.yes") : t("overview.no_label")} ok={d?.doctor?.capability?.cache_telemetry_supported} />
             <InfoRow label={t("overview.maxOutput")} value={d?.doctor?.capability?.max_output?.toLocaleString() || "—"} />
           </div>
@@ -145,7 +145,7 @@ export default function Overview() {
         {/* Workspace */}
         <Section title={t("workspace.title")} icon={GitBranch}>
           <div className="space-y-0">
-            <InfoRow label={t("overview.path") || "Path"} value={d?.workspace?.workspace || d?.doctor?.workspace || "—"} />
+            <InfoRow label={t("overview.pathShort")} value={d?.workspace?.workspace || d?.doctor?.workspace || "—"} />
             <InfoRow label={t("overview.gitRepo")} value={d?.workspace?.git_repo ? t("overview.yes") : t("overview.no_label")} ok={d?.workspace?.git_repo} />
             {d?.workspace?.branch && <InfoRow label={t("overview.branch")} value={d.workspace.branch} />}
             <InfoRow label={t("overview.staged")} value={String(d?.workspace?.staged || 0)} />
