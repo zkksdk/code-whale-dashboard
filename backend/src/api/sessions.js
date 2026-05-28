@@ -1,172 +1,341 @@
-const express = require("express");
-const router = express.Router();
-const cw = require("../services/codewhale-client");
-
-// Map CodeWhale thread summary to dashboard session format
-function threadToSession(t) {
-  return {
-    id: t.id,
-    title: t.title || t.preview || "Chat",
-    description: t.preview || "",
-    created_at: t.created_at,
-    updated_at: t.updated_at,
-    model: t.model || "deepseek-v4-pro",
-    mode: t.mode || "Agent",
-    pinned: t.pinned || false,
-    archived: t.archived || false,
-    latest_turn_status: t.latest_turn_status,
-    thread_id: t.id,
-  };
-}
-
-// GET /api/sessions - List all threads from CodeWhale
-router.get("/", async (req, res) => {
-  try {
-    const { search, include_archived, archived_only, limit } = req.query;
-    const result = await cw.getThreadSummary({
-      limit: limit ? parseInt(limit) : 50,
-      search: search || undefined,
-      include_archived: include_archived === "true",
-      archived_only: archived_only === "true",
-    });
-    const sessions = (Array.isArray(result) ? result : (result.threads || result.data || [])).map(threadToSession).filter(s => s.model !== "deepseek-v4-flash" && s.model !== "flash" && !s.title.includes("你是会话管家") && !s.title.includes("基于以下会话") && !s.title.includes("用一句话"));
-    res.json({ success: true, data: sessions });
-  } catch (err) {
-    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
-  }
-});
-
-// GET /api/sessions/:id - Get thread detail
-router.get("/:id", async (req, res) => {
-  try {
-    const thread = await cw.getThread(req.params.id);
-    const t = thread.thread || thread;
-    res.json({ success: true, data: threadToSession(t) });
-  } catch (err) {
-    res.status(404).json({ success: false, error: "Session not found" });
-  }
-});
-
-// POST /api/sessions - Create a new thread
-router.post("/", async (req, res) => {
-  try {
-    const { title, model, mode, workspace } = req.body;
-    const thread = await cw.createThread({
-      model: model || "deepseek-v4-pro",
-      mode: mode || "Agent",
-      auto_approve: true,
-      workspace: workspace || undefined,
-    });
-    const id = thread.id || thread.thread?.id;
-    if (title && title !== "New Chat") {
-      try { await cw.patchThread(id, { title }); } catch {}
-    }
-    res.json({ success: true, data: { id, title: title || "New Chat", model: model || "deepseek-v4-pro" } });
-  } catch (err) {
-    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
-  }
-});
-
-// PATCH /api/sessions/:id - Update thread (title, etc.)
-router.patch("/:id", async (req, res) => {
-  try {
-    await cw.patchThread(req.params.id, req.body);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
-  }
-});
-
-// DELETE /api/sessions/:id - Delete thread
-router.delete("/:id", async (req, res) => {
-  try {
-    await cw.deleteThread(req.params.id);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
-  }
-});
-
-// POST /api/sessions/:id/pin - Toggle pin (archive/unarchive)
-router.post("/:id/pin", async (req, res) => {
-  try {
-    const thread = await cw.getThread(req.params.id);
-    const t = thread.thread || thread;
-    const archived = !t.archived;
-    await cw.patchThread(req.params.id, { archived });
-    res.json({ success: true, data: { pinned: !archived } });
-  } catch (err) {
-    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
-  }
-});
-
-// GET /api/sessions/:id/messages - Get thread items as messages
-router.get("/:id/messages", async (req, res) => {
-  try {
-    const thread = await cw.getThread(req.params.id);
-    const items = thread.items || [];
-    
-    // Find reasoning items to attach to agent messages
-    const reasoningMap = new Map();
-    for (const item of items) {
-      if (item.kind === "reasoning" && item.detail) {
-        // Find the next agent_message and attach reasoning to it
-        const agentMsg = items.find(i => i.kind === "agent_message" && 
-          new Date(i.started_at || 0) >= new Date(item.started_at || 0));
-        if (agentMsg) reasoningMap.set(agentMsg.id, item.detail);
-      }
-    }
-    
-    const messages = items
-      .filter(item => item.kind === "user_message" || item.kind === "agent_message")
-      .map(item => {
-        const ts = item.started_at || item.ended_at || item.created_at || new Date().toISOString();
-        return {
-          id: item.id,
-          session_id: req.params.id,
-          role: item.kind === "user_message" ? "user" : "assistant",
-          content: item.detail || item.summary || "",
-          timestamp: ts,
-          created_at: ts,
-          reasoning: reasoningMap.get(item.id) || undefined,
-          token_count: item.usage?.total_tokens || 0,
-          status: item.status,
-        };
-      });
-    res.json({ success: true, data: messages });
-  } catch (err) {
-    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
-  }
-});
-
-// POST /api/sessions/:id/compact - Compact thread context
-router.post("/:id/compact", async (req, res) => {
-  try {
-    await cw.compactThread(req.params.id);
-    res.json({ success: true, message: "Thread compacted" });
-  } catch (err) {
-    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
-  }
-});
-
-// POST /api/sessions/:id/archive - Archive thread
-router.post("/:id/archive", async (req, res) => {
-  try {
-    await cw.patchThread(req.params.id, { archived: true });
-    res.json({ success: true, message: "Thread archived" });
-  } catch (err) {
-    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
-  }
-});
-
-// POST /api/sessions/:id/unarchive - Unarchive thread
-router.post("/:id/unarchive", async (req, res) => {
-  try {
-    await cw.patchThread(req.params.id, { archived: false });
-    res.json({ success: true, message: "Thread unarchived" });
-  } catch (err) {
-    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
-  }
+const express = require("express");
+
+const router = express.Router();
+
+const cw = require("../services/codewhale-client");
+
+
+
+// Map CodeWhale thread summary to dashboard session format
+
+function threadToSession(t) {
+
+  return {
+
+    id: t.id,
+
+    title: t.title || t.preview || "Chat",
+
+    description: t.preview || "",
+
+    created_at: t.created_at,
+
+    updated_at: t.updated_at,
+
+    model: t.model || "deepseek-v4-pro",
+
+    mode: t.mode || "Agent",
+
+    pinned: t.pinned || false,
+
+    archived: t.archived || false,
+
+    latest_turn_status: t.latest_turn_status,
+
+    thread_id: t.id,
+
+  };
+
+}
+
+
+
+// GET /api/sessions - List all threads from CodeWhale
+
+router.get("/", async (req, res) => {
+
+  try {
+
+    const { search, include_archived, archived_only, limit } = req.query;
+
+    const result = await cw.getThreadSummary({
+
+      limit: limit ? parseInt(limit) : 50,
+
+      search: search || undefined,
+
+      include_archived: include_archived === "true",
+
+      archived_only: archived_only === "true",
+
+    });
+
+    const sessions = (Array.isArray(result) ? result : (result.threads || result.data || [])).map(threadToSession).filter(s => s.model !== "deepseek-v4-flash" && s.model !== "flash" && !s.title.includes("你是会话管家") && !s.title.includes("基于以下会话") && !s.title.includes("用一句话"));
+
+    res.json({ success: true, data: sessions });
+
+  } catch (err) {
+
+    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
+
+  }
+
+});
+
+
+
+// GET /api/sessions/:id - Get thread detail
+
+router.get("/:id", async (req, res) => {
+
+  try {
+
+    const thread = await cw.getThread(req.params.id);
+
+    const t = thread.thread || thread;
+
+    res.json({ success: true, data: threadToSession(t) });
+
+  } catch (err) {
+
+    res.status(404).json({ success: false, error: "Session not found" });
+
+  }
+
+});
+
+
+
+// POST /api/sessions - Create a new thread
+
+router.post("/", async (req, res) => {
+
+  try {
+
+    const { title, model, mode, workspace } = req.body;
+
+    const thread = await cw.createThread({
+
+      model: model || "deepseek-v4-pro",
+
+      mode: mode || "Agent",
+
+      auto_approve: true,
+
+      workspace: workspace || undefined,
+
+    });
+
+    const id = thread.id || thread.thread?.id;
+
+    if (title && title !== "New Chat") {
+
+      try { await cw.patchThread(id, { title }); } catch {}
+
+    }
+
+    res.json({ success: true, data: { id, title: title || "New Chat", model: model || "deepseek-v4-pro" } });
+
+  } catch (err) {
+
+    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
+
+  }
+
+});
+
+
+
+// PATCH /api/sessions/:id - Update thread (title, etc.)
+
+router.patch("/:id", async (req, res) => {
+
+  try {
+
+    await cw.patchThread(req.params.id, req.body);
+
+    res.json({ success: true });
+
+  } catch (err) {
+
+    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
+
+  }
+
+});
+
+
+
+// DELETE /api/sessions/:id - Delete thread
+
+router.delete("/:id", async (req, res) => {
+
+  try {
+
+    await cw.deleteThread(req.params.id);
+
+    res.json({ success: true });
+
+  } catch (err) {
+
+    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
+
+  }
+
+});
+
+
+
+// POST /api/sessions/:id/pin - Toggle pin (archive/unarchive)
+
+router.post("/:id/pin", async (req, res) => {
+
+  try {
+
+    const thread = await cw.getThread(req.params.id);
+
+    const t = thread.thread || thread;
+
+    const archived = !t.archived;
+
+    await cw.patchThread(req.params.id, { archived });
+
+    res.json({ success: true, data: { pinned: !archived } });
+
+  } catch (err) {
+
+    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
+
+  }
+
+});
+
+
+
+// GET /api/sessions/:id/messages - Get thread items as messages
+
+router.get("/:id/messages", async (req, res) => {
+
+  try {
+
+    const thread = await cw.getThread(req.params.id);
+
+    const items = thread.items || [];
+
+    
+
+    // Find reasoning items to attach to agent messages
+
+    const reasoningMap = new Map();
+
+    for (const item of items) {
+
+      if (item.kind === "reasoning" && item.detail) {
+
+        // Find the next agent_message and attach reasoning to it
+
+        const agentMsg = items.find(i => i.kind === "agent_message" && 
+
+          new Date(i.started_at || 0) >= new Date(item.started_at || 0));
+
+        if (agentMsg) reasoningMap.set(agentMsg.id, item.detail);
+
+      }
+
+    }
+
+    
+
+    const messages = items
+
+      .filter(item => item.kind === "user_message" || item.kind === "agent_message")
+
+      .map(item => {
+
+        const ts = item.started_at || item.ended_at || item.created_at || new Date().toISOString();
+
+        return {
+
+          id: item.id,
+
+          session_id: req.params.id,
+
+          role: item.kind === "user_message" ? "user" : "assistant",
+
+          content: item.detail || item.summary || "",
+
+          timestamp: ts,
+
+          created_at: ts,
+
+          reasoning: reasoningMap.get(item.id) || undefined,
+
+          token_count: item.usage?.total_tokens || 0,
+
+          status: item.status,
+
+        };
+
+      });
+
+    res.json({ success: true, data: messages });
+
+  } catch (err) {
+
+    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
+
+  }
+
+});
+
+
+
+// POST /api/sessions/:id/compact - Compact thread context
+
+router.post("/:id/compact", async (req, res) => {
+
+  try {
+
+    await cw.compactThread(req.params.id);
+
+    res.json({ success: true, message: "Thread compacted" });
+
+  } catch (err) {
+
+    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
+
+  }
+
+});
+
+
+
+// POST /api/sessions/:id/archive - Archive thread
+
+router.post("/:id/archive", async (req, res) => {
+
+  try {
+
+    await cw.patchThread(req.params.id, { archived: true });
+
+    res.json({ success: true, message: "Thread archived" });
+
+  } catch (err) {
+
+    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
+
+  }
+
+});
+
+
+
+// POST /api/sessions/:id/unarchive - Unarchive thread
+
+router.post("/:id/unarchive", async (req, res) => {
+
+  try {
+
+    await cw.patchThread(req.params.id, { archived: false });
+
+    res.json({ success: true, message: "Thread unarchived" });
+
+  } catch (err) {
+
+    res.status(500).json({ success: false, error: typeof err === 'string' ? err : (err.message || JSON.stringify(err).slice(0, 200)) });
+
+  }
+
 });
 
 
@@ -297,6 +466,17 @@ router.post("/ai/recommend", async (req, res) => {
       try { const m = result.match(/\{[\s\S]*\}/); if (m) recommendations = JSON.parse(m[0]); } catch {}
     }
     res.json({ success: true, data: recommendations });
+  } catch (err) {
+    res.status(500).json({ success: false, error: (err.message || String(err)).slice(0, 200) });
+  }
+});
+
+
+// POST /api/sessions/:id/resume - Resume an interrupted session
+router.post("/:id/resume", async (req, res) => {
+  try {
+    const result = await cw.resumeThread(req.params.id);
+    res.json({ success: true, data: result });
   } catch (err) {
     res.status(500).json({ success: false, error: (err.message || String(err)).slice(0, 200) });
   }

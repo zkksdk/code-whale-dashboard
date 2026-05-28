@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Save, TestTube, RefreshCw, Key, Globe, Server, Sliders } from 'lucide-react';
+﻿import React, { useState, useEffect } from 'react';
+import { Save, TestTube, RefreshCw, Key, Globe, Server, Sliders, Eye, EyeOff } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getConfig, updateConfig, testConfig } from '../api/client';
+import { getConfig, updateConfig, testConfig, getModels, switchModel } from '../api/client';
 import { useStore } from '../store';
 import { useTranslation } from '../i18n/useTranslation';
 
@@ -11,7 +11,13 @@ export default function Config() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'deepseek' | 'nvidia' | 'ui'>('deepseek');
   const [formData, setFormData] = useState<Record<string, string | number | boolean>>({api_key: "", base_url: "", provider: "", model: "", max_tokens: 4096, temperature: 0.7, top_p: 1.0});
+  const [showApiKey, setShowApiKey] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+    const { data: modelsData } = useQuery({
+    queryKey: ['models'],
+    queryFn: getModels,
+  });
 
   const { data: configData, isLoading } = useQuery({
     queryKey: ['config'],

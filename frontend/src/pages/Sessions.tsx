@@ -1,7 +1,7 @@
-﻿
+
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, Trash2, Pin, MessageSquare, Archive, ArrowUpDown, Check, X, AlertTriangle, MoreHorizontal, Clock, Bot, Sparkles, ChevronRight, PanelRightClose, PanelRight, Zap, Hash, DollarSign, FileText, Loader2, Wand2 } from "lucide-react";
+import { Search, Plus, Trash2, Pin, MessageSquare, Archive, ArrowUpDown, Check, X, AlertTriangle, MoreHorizontal, Clock, Bot, Sparkles, ChevronRight, PanelRightClose, PanelRight, Zap, Hash, DollarSign, FileText, Loader2, Wand2, Eraser } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSessions, deleteSession, togglePinSession, createSession, patchThread } from "../api/client";
 import { useStore } from "../store";
@@ -32,6 +32,8 @@ export default function SessionsPage() {
   const [editTitle, setEditTitle] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCleanConfirm, setShowCleanConfirm] = useState(false);
+  const [cleanLoading, setCleanLoading] = useState(false);
   const editInputRef = useRef<HTMLInputElement>(null);
 
   // AI Panel state
@@ -80,6 +82,24 @@ export default function SessionsPage() {
     onError: (err: Error) => addToast({ type: "error", message: err.message }),
   });
 
+  const cleanupMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const results = [];
+      for (const id of ids) {
+        try { await patchThread(id, { archived: true }); results.push(id); }
+        catch (e) { console.warn('Failed to clean session', id, e); }
+      }
+      return results;
+    },
+    onSuccess: (results: string[]) => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      addToast({ type: 'success', message: t('sessions.cleanSuccess', { count: results.length }) });
+      setShowCleanConfirm(false);
+      setCleanLoading(false);
+    },
+    onError: (err: Error) => { addToast({ type: 'error', message: err.message }); setCleanLoading(false); },
+  });
+
   const renameMutation = useMutation({
     mutationFn: ({ id, title }: { id: string; title: string }) => patchThread(id, { title }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["sessions"] }); setEditingId(null); },
@@ -92,6 +112,7 @@ export default function SessionsPage() {
 
   const activeSessions = sessions.filter(s => !s.archived);
   const archivedSessions = sessions.filter(s => s.archived);
+  const emptySessions = sessions.filter(s => !s.archived && (s.title === 'New Thread' || s.title === 'New Chat' || s.title === '') && !s.latest_turn_status);
   const stats = statsData || {};
 
   let filtered = filterTab === "active" ? activeSessions : filterTab === "archived" ? archivedSessions : sessions;
@@ -114,7 +135,21 @@ export default function SessionsPage() {
   const handleSaveEdit = () => { if (editingId && editTitle.trim()) renameMutation.mutate({ id: editingId, title: editTitle.trim() }); };
   const handleRenameFromCandidate = (id: string, title: string) => { renameMutation.mutate({ id, title }); setTitleSuggestId(null); };
 
-  // ─── AI Handlers ───
+  // ������ AI Handlers ������
+
+  const handleCleanEmpty = () => {
+    if (emptySessions.length === 0) {
+      addToast({ type: 'info', message: t('sessions.noEmptySessions') });
+      return;
+    }
+    setShowCleanConfirm(true);
+  };
+
+  const confirmClean = () => {
+    const ids = emptySessions.map(s => s.id);
+    setCleanLoading(true);
+    cleanupMutation.mutate(ids);
+  };
 
   const handleAiSend = async (query?: string) => {
     const q = query || aiQuery.trim();
@@ -257,6 +292,14 @@ export default function SessionsPage() {
               className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-gray-600 hover:text-gray-400 transition-colors">
               <ArrowUpDown size={10} /> {sortBy === "updated" ? "Date" : "Name"}
             </button>
+            {emptySessions.length > 0 && (
+              <button onClick={handleCleanEmpty}
+                className="flex items-center gap-1 ml-1 px-2 py-1 bg-amber-900/20 hover:bg-amber-900/30 border border-amber-800/30 rounded text-[10px] text-amber-400 transition-colors"
+                title={t("sessions.cleanTitle").replace("{count}", String(emptySessions.length))}>
+                <Eraser size={10} />
+                <span className="hidden sm:inline">{t("sessions.cleanEmpty")} ({emptySessions.length})</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -400,7 +443,35 @@ export default function SessionsPage() {
         )}
       </div>
 
-      {/* AI Assistant Panel */}
+      
+      {/* Clean Empty Sessions Modal */}
+      {showCleanConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowCleanConfirm(false)}>
+          <div className="w-full max-w-sm bg-dark-950 border border-dark-700 rounded-lg shadow-2xl p-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-full bg-amber-900/20 flex items-center justify-center"><Eraser size={18} className="text-amber-400" /></div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-200">{t("sessions.cleanEmpty")}</h3>
+                <p className="text-[11px] text-gray-600 mt-0.5">{`${t("sessions.cleanConfirm").replace("{count}", String(emptySessions.length))}`}</p>
+              </div>
+            </div>
+            <div className="mb-4 max-h-32 overflow-y-auto">
+              {emptySessions.slice(0, 5).map(s => (
+                <div key={s.id} className="text-[11px] text-gray-500 py-0.5">{s.id.slice(0, 20)}... �� {t("sessions.emptySession")}</div>
+              ))}
+              {emptySessions.length > 5 && <div className="text-[11px] text-gray-600">...{t("sessions.andMore", { count: emptySessions.length - 5 })}</div>}
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setShowCleanConfirm(false)} className="px-3 py-1.5 bg-dark-800 hover:bg-dark-700 rounded text-xs text-gray-400 transition-colors">{t("common.cancel")}</button>
+              <button onClick={confirmClean} disabled={cleanLoading}
+                className="px-3 py-1.5 bg-amber-900/30 hover:bg-amber-900/50 border border-amber-800/30 rounded text-xs text-amber-400 transition-colors disabled:opacity-50">
+                {cleanLoading ? t("sessions.cleaning") : t("sessions.cleanConfirmBtn")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+{/* AI Assistant Panel */}
       {aiOpen && (
         <div className="w-80 flex-shrink-0 border-l border-dark-800 bg-dark-950 flex flex-col overflow-hidden">
           <div className="flex items-center justify-between px-3 py-2 border-b border-dark-800">

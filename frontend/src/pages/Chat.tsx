@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Send, Bot, User, Copy, Brain, ChevronDown, ChevronRight, StopCircle, Plus, Wifi, WifiOff, Check, MessageSquare, X, Search, ListTodo, GanttChartSquare, FolderOpen, Edit2 } from "lucide-react";
@@ -59,6 +59,7 @@ export default function Chat() {
   const [reasoningExpanded, setReasoningExpanded] = useState(true);
   const [currentToolParts, setCurrentToolParts] = useState<Map<string, ToolCallPart>>(new Map());
   const [workspace, setWorkspace] = useState("");
+  const [selectedModel, setSelectedModel] = useState("deepseek-v4-pro");
   const [workspaceEditing, setWorkspaceEditing] = useState(false);
   const [workspaceDraft, setWorkspaceDraft] = useState("");
   const [showNewSessionDialog, setShowNewSessionDialog] = useState(false);
@@ -99,6 +100,7 @@ export default function Chat() {
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamingContentRef = useRef("");
+  const startTimeRef = useRef(0);
   const streamingReasoningRef = useRef("");
   const currentToolPartsRef = useRef<Map<string, ToolCallPart>>(new Map());
   const { isStreaming, setStreaming, wsConnected, addToast, theme, setTheme, language, setLanguage } = useStore();
@@ -136,16 +138,9 @@ export default function Chat() {
     if (!sessionId) {
       const lastId = localStorage.getItem("code-whale-last-session");
       if (lastId) {
-        getSession(lastId).then(() => navigate("/chat/"+lastId, { replace: true }))
-          .catch(() => { localStorage.removeItem("code-whale-last-session");
-            createSession({ title: "New Chat" }).then((res: any) => {
-              const id = res.data?.data?.id; if (id) navigate("/chat/"+id, { replace: true });
-            }).catch(() => {}); });
-      } else {
-        createSession({ title: "New Chat" }).then((res: any) => {
-          const id = res.data?.data?.id; if (id) navigate("/chat/"+id, { replace: true });
-        }).catch(() => {});
+        navigate("/chat/"+lastId, { replace: true });
       }
+      // No auto-create: thread created on first message send
     }
   }, [sessionId, navigate]);
 
@@ -244,6 +239,7 @@ export default function Chat() {
     // Text delta
     if (ev.event === "item.delta" && isTextKind(ev.kind || "")) {
       const chunk = ev.chunk; if (typeof chunk === "string") setStreamingContent(p => p + chunk); streamingContentRef.current += chunk;
+      setLocalMessages(msgs => { const c = [...msgs]; const l = c[c.length-1]; if (l && l.status==="streaming") { l.content = streamingContentRef.current; persistMessages(c); } return c; });
       return;
     }
 
@@ -272,7 +268,7 @@ export default function Chat() {
           const content = sc || "(no response)";
           if (content !== "(no response)") parts.push({ type:"text", content });
           currentToolPartsRef.current.forEach(p => parts.push(p)); setCurrentToolParts(new Map()); currentToolPartsRef.current = new Map();
-          const updated = { ...last, content, reasoning: streamingReasoningRef.current||last.reasoning, parts: parts.length>0 ? parts : last.parts, status: "completed", timestamp: new Date().toISOString() };
+          const updated = { ...last, content, reasoning: streamingReasoningRef.current||last.reasoning, parts: parts.length>0 ? parts : last.parts, status: "completed", timestamp: new Date().toISOString(), elapsed: ((Date.now() - startTimeRef.current) / 1000).toFixed(1) };
           const result = [...mc.slice(0,-1), updated]; persistMessages(result); return result;
         } return mc;
       });
@@ -290,13 +286,24 @@ export default function Chat() {
     setCurrentToolParts(new Map()); setTodos([]); setPlan({ steps: [] });
     const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", content: userMessage, timestamp: new Date().toISOString() };
     const assistantMsg: ChatMessage = { id: (Date.now()+1).toString(), role: "assistant", content: "", parts: [], timestamp: new Date().toISOString(), status: "streaming" };
+    let sid = sessionId;
+    if (!sid) {
+      try {
+        const res = await createSession({ title: userMessage.slice(0, 50), workspace: workspace || undefined, model: selectedModel });
+        sid = res.data?.data?.id;
+        if (sid) { navigate("/chat/"+sid, { replace: true }); }
+      } catch (err: any) {
+        addToast({ type: "error", message: t("chat.sessionCreationFailed") });
+        setStreaming(false); return;
+      }
+    }
     const newLocal = [...localMessages, userMsg, assistantMsg];
     setLocalMessages(newLocal); persistMessages(newLocal); setStreaming(true);
     const controller = new AbortController(); abortRef.current = controller;
     try {
       const res = await fetch("/api/chat/stream", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, message: userMessage, workspace: workspace || undefined }),
+        body: JSON.stringify({ sessionId: sid, message: userMessage, workspace: workspace || undefined, model: selectedModel }),
         signal: controller.signal,
       });
       if (!res.ok) throw new Error("HTTP "+res.status);
@@ -313,7 +320,7 @@ export default function Chat() {
       setStreaming(false); abortRef.current = null;
       queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
     }
-  }, [input, isStreaming, sessionId, workspace, localMessages, handleSSEEvent, addToast, t, persistMessages, queryClient]);
+  }, [input, isStreaming, sessionId, workspace, selectedModel, localMessages, handleSSEEvent, addToast, t, persistMessages, queryClient, navigate]);
 
   const handleStop = useCallback(() => { abortRef.current?.abort(); setStreaming(false); }, [setStreaming]);
 
@@ -581,6 +588,10 @@ function MessageBubble({ msg, onCopy, copied, t }: { msg: ChatMessage; onCopy: (
       <div className="flex items-center gap-3 mt-1.5 pl-7">
         <button onClick={()=>onCopy(msg.content)} className="flex items-center gap-1 text-[10px] text-gray-700 hover:text-gray-400 transition-colors">
           {copied?<Check size={11} className="text-green-400"/>:<Copy size={11}/>}{copied?t("chat.copied"):t("chat.copy")}
+        {((msg.token_count ?? 0) > 0 || (msg as any).elapsed) && <span className="text-[10px] text-gray-700 ml-auto">
+          {(msg.token_count ?? 0) > 0 ? `${msg.token_count} tokens` : ""}
+          {(msg as any).elapsed ? `${(msg.token_count ?? 0) > 0 ? " · " : ""}${(msg as any).elapsed}s` : ""}
+        </span>}
         </button>
         {(msg.token_count ?? 0) > 0 && <span className="text-[10px] text-gray-700">{msg.token_count} tokens</span>}
       </div>

@@ -173,7 +173,16 @@ export const zh = {
     filterArchived: '归档',
     rename: '重命名',
     archive: '归档',
-    unarchive: '取消归档'
+    unarchive: '取消归档',
+    cleanEmpty: '清理空会话',
+    cleanTitle: '{count} 个空会话',
+    cleanConfirm: '确认归档 {count} 个空会话？此操作不可撤销。',
+    cleanConfirmBtn: '确认清理',
+    cleaning: '清理中...',
+    cleanSuccess: '已清理 {count} 个会话',
+    noEmptySessions: '没有空会话需要清理',
+    emptySession: '空会话',
+    andMore: '还有 {count} 个...'
   },
   workspace: {
     title: '工作区',
@@ -294,7 +303,13 @@ export const zh = {
     autoScroll: '自动滚动对话',
     maxTokens: '最大 Token',
     temperature: '温度',
-    baseUrlField: 'Base URL'
+    baseUrlField: 'Base URL',
+    models: '模型列表',
+    availableModels: '可用模型',
+    inUse: '使用中',
+    switchTo: '切换',
+    modelSwitched: '模型已切换',
+    loadingModels: '加载模型列表...'
   },
   models: {
     title: '模型',
@@ -670,7 +685,16 @@ export const en = {
     filterArchived: 'Archived',
     rename: 'Rename',
     archive: 'Archive',
-    unarchive: 'Unarchive'
+    unarchive: 'Unarchive',
+    cleanEmpty: 'Clean Empty',
+    cleanTitle: '{count} empty sessions',
+    cleanConfirm: 'Archive {count} empty sessions? This cannot be undone.',
+    cleanConfirmBtn: 'Confirm Clean',
+    cleaning: 'Cleaning...',
+    cleanSuccess: 'Cleaned {count} sessions',
+    noEmptySessions: 'No empty sessions to clean',
+    emptySession: 'Empty session',
+    andMore: '{count} more...'
   },
   workspace: {
     title: 'Workspace',
@@ -791,7 +815,13 @@ export const en = {
     autoScroll: 'Auto-scroll chat',
     maxTokens: 'Max Tokens',
     temperature: 'Temperature',
-    baseUrlField: 'Base URL'
+    baseUrlField: 'Base URL',
+    models: 'Models',
+    availableModels: 'Available Models',
+    inUse: 'In Use',
+    switchTo: 'Switch',
+    modelSwitched: 'Model switched',
+    loadingModels: 'Loading models...'
   },
   models: {
     title: 'Models',

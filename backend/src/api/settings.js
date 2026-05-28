@@ -5,13 +5,15 @@ const path = require("path");
 
 const SETTINGS_FILE = path.join(require("os").homedir(), ".code-whale-dashboard", "settings.json");
 
+const DEFAULT_SETTINGS = { theme: "dark", language: "zh", autoSave: true };
+
 function readSettings() {
   try {
     if (fs.existsSync(SETTINGS_FILE)) {
-      return JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf-8"));
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf-8")) };
     }
   } catch {}
-  return {};
+  return { ...DEFAULT_SETTINGS };
 }
 
 function writeSettings(data) {
