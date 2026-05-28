@@ -181,7 +181,13 @@ export default function Chat() {
       setCurrentToolParts(prev => { const n = new Map(prev); n.set(ev.item_id || "", {
         type: "tool_call", toolName: ev.toolName || ev.summary || "tool", callId: ev.item_id,
         status: "pending", summary: ev.summary, arguments: ev.arguments
-      }); return n; }); return;
+      }); return n; });
+      // Show approval dialog for tool calls
+      const toolName = ev.toolName || ev.summary || "tool";
+      const toolInput = JSON.stringify(ev.arguments || {}, null, 2);
+      setApprovalTool({ name: toolName, input: toolInput });
+      setApprovalVisible(true);
+      return;
     }
     if (ev.event === "item.completed" && isToolKind(ev.kind || "")) {
       setCurrentToolParts(prev => { const n = new Map(prev); const ex = n.get(ev.item_id || "");
@@ -435,6 +441,14 @@ export default function Chat() {
           <button onClick={()=>setStreamError(null)} className="ml-auto text-red-500 hover:text-red-300"><X size={12}/></button>
         </div>
       )}
+      <ApprovalDialog
+        visible={approvalVisible}
+        toolName={approvalTool.name}
+        toolInput={approvalTool.input}
+        onApprove={() => { setApprovalVisible(false); }}
+        onDeny={() => { setApprovalVisible(false); handleStop(); }}
+        onTrust={() => { setApprovalVisible(false); }}
+      />
       <form onSubmit={handleSubmit} className="flex-shrink-0 border-t border-dark-800 px-3 py-2">
         <div className="flex items-center gap-2 mb-1.5">
           <span className="flex items-center gap-1 text-[10px] text-gray-600">
