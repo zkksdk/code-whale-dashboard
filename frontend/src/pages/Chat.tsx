@@ -7,11 +7,14 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useStore } from "../store";
 import { useTranslation } from "../i18n/useTranslation";
-import { getSessionMessages, createSession, getSession, steerTurn, interruptTurn, getSessions } from "../api/client";
+import { getSessionMessages, createSession, getSession, steerTurn, interruptTurn, getSessions, getSystem } from "../api/client";
 import ToolCallCard, { ToolCallPart } from "../components/Chat/ToolCallCard";
 import WorkPanel, { TodoItem } from "../components/Chat/WorkPanel";
 import PlanPanel, { PlanData, PlanStep } from "../components/Chat/PlanPanel";
 import { formatRelativeTime } from "../utils/format";
+import SlashCommands, { SlashCommand, SLASH_COMMANDS } from "../components/Chat/SlashCommands";
+import FileMentions from "../components/Chat/FileMentions";
+import ApprovalDialog from "../components/Chat/ApprovalDialog";
 
 interface ChatPart {
   type: "text" | "thinking" | "tool_call";
@@ -46,6 +49,7 @@ function isToolKind(kind: string): boolean {
 
 export default function Chat() {
   const { sessionId } = useParams<{ sessionId: string }>();
+  
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [input, setInput] = useState("");
@@ -58,6 +62,14 @@ export default function Chat() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showSessionSwitcher, setShowSessionSwitcher] = useState(false);
   const [sessionSearch, setSessionSearch] = useState("");
+  const [slashOpen, setSlashOpen] = useState(false);
+  const [slashQuery, setSlashQuery] = useState("");
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [workspaceFiles, setWorkspaceFiles] = useState<{ name: string; path: string; isDir: boolean }[]>([]);
+  const [approvalVisible, setApprovalVisible] = useState(false);
+  const [approvalTool, setApprovalTool] = useState({ name: "", input: "" });
+  const [approvalResolve, setApprovalResolve] = useState<((v: string) => void) | null>(null);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [panelWorkOpen, setPanelWorkOpen] = useState(true);
   const [panelPlanOpen, setPanelPlanOpen] = useState(true);
@@ -70,7 +82,7 @@ export default function Chat() {
     catch { return []; }
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { isStreaming, setStreaming, wsConnected, addToast } = useStore();
+  const { isStreaming, setStreaming, wsConnected, addToast, theme, setTheme, language, setLanguage } = useStore();
   const queryClient = useQueryClient();
   const abortRef = useRef<AbortController | null>(null);
 
@@ -422,12 +434,31 @@ export default function Chat() {
           {isStreaming && <button type="button" onClick={handleStop} className="ml-auto flex items-center gap-1 px-2 py-0.5 text-[10px] text-red-400 hover:bg-red-900/20 rounded transition-colors"><StopCircle size={11}/>{t("chat.stop")}</button>}
         </div>
         <div className="relative">
-          <textarea value={input} onChange={e=>setInput(e.target.value)} placeholder={t("chat.typeMessage")}
+          <div className="relative flex-1">
+              <SlashCommands visible={slashOpen} query={slashQuery} language={language} onSelect={(cmd: SlashCommand) => {
+                if (cmd.action === "navigate" && cmd.target) navigate(cmd.target);
+                else if (cmd.action === "insert" && cmd.target) setInput(cmd.target);
+                else if (cmd.action === "action") {
+                  if (cmd.target === "clear") { setLocalMessages([]); addToast({ type: "success", message: t("chat.cleared") || "Chat cleared" }); }
+                  else if (cmd.target === "newSession") { handleNewSession(); }
+                  else if (cmd.target === "themeDark") { setTheme("dark"); }
+                  else if (cmd.target === "themeLight") { setTheme("light"); }
+                  else if (cmd.target === "langZh") { setLanguage("zh"); }
+                  else if (cmd.target === "langEn") { setLanguage("en"); }
+                }
+                setSlashOpen(false); setInput("");
+              }} onClose={() => setSlashOpen(false)} />
+              <FileMentions visible={mentionOpen} query={mentionQuery} files={workspaceFiles} onSelect={(f) => {
+                setInput(prev => { const idx = prev.lastIndexOf("@"); return prev.slice(0, idx) + "@" + f.path + " "; });
+                setMentionOpen(false);
+              }} onClose={() => setMentionOpen(false)} />
+              <textarea value={input} onChange={e=>{const v=e.target.value;setInput(v);const lastSlash=v.lastIndexOf("/");const lastAt=v.lastIndexOf("@");if(lastSlash>=0&&lastSlash>lastAt&&v.slice(lastSlash).match(/^\/[\u4e00-\u9fa5\w]*$/)){setSlashQuery(v.slice(lastSlash));setSlashOpen(true);setMentionOpen(false);}else if(lastAt>=0&&lastAt>lastSlash&&v.slice(lastAt).match(/^@[w./-]*$/)){setMentionQuery(v.slice(lastAt+1));setMentionOpen(true);setSlashOpen(false);}else{setSlashOpen(false);setMentionOpen(false);}}} placeholder={t("chat.typeMessage")}
             className="w-full bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 outline-none resize-none focus:border-whale-500/50 transition-colors"
             rows={1} disabled={isStreaming}
             onInput={(e)=>{const t=e.target as HTMLTextAreaElement;t.style.height="auto";t.style.height=Math.min(t.scrollHeight,200)+"px";}}
-            onKeyDown={(e)=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();handleSubmit();}}} />
+            onKeyDown={(e)=>{if(e.key==="Enter"&&!e.shiftKey){if(slashOpen||mentionOpen){return;}e.preventDefault();handleSubmit();}}} />
           <div className="absolute right-1.5 bottom-1.5">
+            </div>
             <button type="submit" disabled={!input.trim()||isStreaming}
               className="p-1.5 bg-whale-600 hover:bg-whale-500 disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-colors">
               {isStreaming?<span className="block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"/>:<Send size={14} className="text-white"/>}

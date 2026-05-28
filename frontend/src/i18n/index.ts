@@ -100,7 +100,7 @@ export const zh = {
     mode: '模式',
     tokens: 'Token',
     cost: '费用',
-    thinking: '思考中...'
+    thinking: '思考中...', approvalTitle: '工具执行确认', approve: '允许', deny: '拒绝', trust: '信任会话', cleared: '对话已清空', workspacePlaceholder: '工作区路径'
   },
   threads: {
     title: '会话',
@@ -570,7 +570,7 @@ export const en = {
     mode: 'Mode',
     tokens: 'Tokens',
     cost: 'Cost',
-    thinking: 'Thinking...'
+    thinking: 'Thinking...', approvalTitle: 'Approve Tool Execution', approve: 'Approve', deny: 'Deny', trust: 'Trust Session', cleared: 'Chat cleared', workspacePlaceholder: 'Workspace path'
   },
   threads: {
     title: 'Threads',
